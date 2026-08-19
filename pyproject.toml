@@ -101,6 +101,7 @@ django42 = [
 quality = [
     { include-group = "test" },
     "ruff",
+    "edx-lint",
 ]
 doc = [
     { include-group = "test" },
@@ -139,6 +140,11 @@ uv_constraints = [
     # https://github.com/openedx/openedx-platform/pull/37991
     # Unpin once the issue is resolved.
     "setuptools<=80.9.0",
+    # Date: 2026-08-10
+    # pytest-django 4.13.0 references `_pre_setup_ran_eagerly`, an attribute
+    # that only exists on Django 5.x TransactionTestCase, causing AttributeError
+    # on Django 4.2. Pin until a compatible release is available.
+    "pytest-django<4.13.0",
 ]
 
 [tool.ruff]
@@ -156,9 +162,7 @@ select = [
     "UP",     # pyupgrade
     "DJ",     # flake8-django
 ]
-ignore = [
-    "E501",   # line too long (handled by formatter)
-]
+ignore = []
 
 [tool.ruff.lint.isort]
 known-third-party = ["django", "xblock"]
@@ -220,7 +224,11 @@ conflicts = [
 constraint-dependencies = [
     "Django<6.0",
     "elasticsearch<7.14.0",
+    "social-auth-app-django<6.0.0",
+    "social-auth-core<5.0.0",
+    "pip<26.2.1",
     "setuptools<=80.9.0",
+    "pytest-django<4.13.0",
 ]
 
 [tool.semantic_release]
