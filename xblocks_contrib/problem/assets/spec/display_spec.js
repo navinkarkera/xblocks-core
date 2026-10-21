@@ -9,6 +9,7 @@ describe("Problem", function () {
         promise: { then: function(cb) { cb(); return this; }, catch: function() { return this; } },
         document: {
           getMathItemsWithin: jasmine.createSpy("getMathItemsWithin"),
+          inputJax: [{name: "TeX"}, {name: "AsciiMath"}],
         },
         toMML: jasmine.createSpy("startup.toMML"),
       },
@@ -1020,12 +1021,30 @@ data-url='/problem/quiz/'> \
     it("should trigger MathJax v4 typesetting via typesetClear + typesetPromise", function () {
       expect(MathJax.typesetClear).toHaveBeenCalled();
       expect(MathJax.typesetPromise).toHaveBeenCalled();
+      expect($("#display_example_1").text()).toBe("`E=mc^2`");
     });
 
     it("preserves backslash-delimited TeX without wrapping in AsciiMath backticks", function () {
       $("#input_example_1").val("\\\(E=mc^2\\\)");
       this.problem.refreshMath({ target: $("#input_example_1").get(0) });
       expect($("#display_example_1").text()).toBe("\\\(E=mc^2\\\)");
+    });
+  });
+
+  describe("refreshMath without the AsciiMath input jax", function () {
+    beforeEach(function () {
+      MathJax.startup.document.inputJax = [];
+      spyOn(window.console, "warn");
+      this.problem = new Problem(mockRuntime, $(".xblock-student_view"));
+      $("#input_example_1").val("E=mc^2");
+      this.problem.refreshMath({ target: $("#input_example_1").get(0) });
+      this.problem.refreshMath({ target: $("#input_example_1").get(0) });
+    });
+
+    it("warns once about input/asciimath and still wraps in AsciiMath backticks", function () {
+      expect(window.console.warn.calls.count()).toBe(1);
+      expect(window.console.warn.calls.argsFor(0)[0]).toContain("input/asciimath");
+      expect($("#display_example_1").text()).toBe("`E=mc^2`");
     });
   });
 
@@ -1042,21 +1061,6 @@ data-url='/problem/quiz/'> \
       it("convert jax to MathML via startup.toMML", function () {
         expect(MathJax.startup.toMML).toHaveBeenCalledWith(this.stubbedJax.root);
         expect($("#input_example_1_dynamath")).toHaveValue("<MathML>");
-      });
-    });
-
-    describe("when there is an exception with restart", function () {
-      beforeEach(function () {
-        const error = new Error();
-        error.restart = true;
-        MathJax.startup.toMML.and.throwError(error);
-        this.problem.updateMathML(this.stubbedJax, $("#input_example_1").get(0));
-      });
-
-      it("should catch the error and not propagate", function () {
-        // v4: caught by try/catch, restart=true → startup.promise.then schedules refreshMath.
-        // Minimal assertion: toMML was invoked, no uncaught exception.
-        expect(MathJax.startup.toMML).toHaveBeenCalled();
       });
     });
   });

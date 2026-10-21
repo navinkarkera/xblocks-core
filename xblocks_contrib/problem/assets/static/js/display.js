@@ -65,6 +65,18 @@ const isMathJaxRefreshReady = () => isMathJaxTypesetReady()
   && MathJax.startup.document && typeof MathJax.startup.document.getMathItemsWithin === "function";
 const isMathJaxMathMLReady = () => typeof MathJax !== "undefined" && MathJax !== null
   && MathJax.startup && MathJax.startup.promise && typeof MathJax.startup.toMML === "function";
+// MathJax v3/v4 expose the active input jax on startup.document.inputJax.
+const hasAsciiMathInput = () => {
+  const inputJax = MathJax.startup && MathJax.startup.document && MathJax.startup.document.inputJax;
+  for (let i = 0; inputJax && i < inputJax.length; i++) {
+    if (inputJax[i] && inputJax[i].name === "AsciiMath") {
+      return true;
+    }
+  }
+  return false;
+};
+// Only one warning per page load; AsciiMath is loaded once for the whole page.
+let warnedMissingAsciiMath = false;
 
 Problem.prototype.bind = function () {
   const that = this;
@@ -773,7 +785,7 @@ Problem.prototype.refreshMath = function (event, element) {
     return;
   }
   // Use getElementById so IDs with : or . do not break as CSS selectors.
-  const math = document.getElementById(`display_${elid}`) || document.getElementById(`${element.id}_preview`);
+  const math = document.getElementById(`display_${elid}`);
   if (!math) {
     return;
   }
@@ -792,6 +804,14 @@ Problem.prototype.refreshMath = function (event, element) {
     || (/^\s*\\\[/.test(eqn) && /\\\]\s*$/.test(eqn))
     || (/^\s*\$\$/.test(eqn) && /\$\$\s*$/.test(eqn))
     || (/^\s*\$[^$]/.test(eqn) && /[^$]\$\s*$/.test(eqn));
+  if (!isTexDelimited && !warnedMissingAsciiMath && !hasAsciiMathInput()) {
+    warnedMissingAsciiMath = true;
+    // eslint-disable-next-line no-console
+    console.warn(
+      "[ProblemBlock] MathJax was loaded without the AsciiMath input jax (input/asciimath). " +
+      "Math entered as AsciiMath will not render; add input/asciimath to the MathJax loader.load config."
+    );
+  }
   math.textContent = isTexDelimited ? eqn : `\`${eqn}\``;
   MathJax.typesetPromise([math]).then(() => {
     const jax = MathJax.startup.document.getMathItemsWithin(math)[0];
@@ -808,15 +828,8 @@ Problem.prototype.updateMathML = function (jax, element) {
   if (!isMathJaxMathMLReady()) {
     return;
   }
-  try {
-    const dynEl = document.getElementById(`${element.id}_dynamath`);
-    if (dynEl) { dynEl.value = MathJax.startup.toMML(jax.root); }
-  } catch (exception) {
-    if (!exception.restart) {
-      throw exception;
-    }
-    MathJax.startup.promise.then(() => this.refreshMath(null, element));
-  }
+  const dynEl = document.getElementById(`${element.id}_dynamath`);
+  if (dynEl) { dynEl.value = MathJax.startup.toMML(jax.root); }
 };
 
 Problem.prototype.refreshAnswers = function () {
