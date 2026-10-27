@@ -194,8 +194,7 @@ class HtmlBlockMixin(LegacyXmlMixin, XBlock):
         frag.add_javascript("""
 function HtmlBlock(runtime, element) {
     if (typeof MathJax !== "undefined" && MathJax !== null &&
-        MathJax.startup && MathJax.startup.promise &&
-        typeof MathJax.typesetPromise === "function") {
+        MathJax.startup && MathJax.startup.promise) {
         MathJax.startup.promise.then(function() {
             MathJax.typesetPromise([element]);
         });

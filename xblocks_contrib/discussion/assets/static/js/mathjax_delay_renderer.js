@@ -61,8 +61,9 @@
           MathJax.typesetClear([$(elem)[0]]);
         }
         $(elem).html(text); // xss-lint: disable=javascript-jquery-html
+        // startup.promise only: MathJax v4 defines typesetPromise when startup finishes.
         if (typeof MathJax !== 'undefined' && MathJax !== null && MathJax.startup &&
-            MathJax.startup.promise && typeof MathJax.typesetPromise === "function") {
+            MathJax.startup.promise) {
           return MathJax.startup.promise
             .then(() => MathJax.typesetPromise([$(elem)[0]]));
         }
@@ -86,7 +87,7 @@
             curTime = getTime();
             _this.elapsedTime = curTime - prevTime;
             if (typeof MathJax !== "undefined" && MathJax !== null && MathJax.startup &&
-                MathJax.startup.promise && typeof MathJax.typesetPromise === "function") {
+                MathJax.startup.promise) {
               prevTime = getTime();
               return MathJax.startup.promise
                 .then(

@@ -111,6 +111,42 @@ data-url='/problem/quiz/'> \
     });
   });
 
+  describe("bind while MathJax startup is pending", function () {
+    beforeEach(function () {
+      // MathJax v4 installs typesetPromise only once startup.promise resolves.
+      window.MathJax = {
+        startup: {
+          document: {
+            getMathItemsWithin: jasmine.createSpy("getMathItemsWithin").and.returnValue([{ root: {} }]),
+            inputJax: [{ name: "AsciiMath" }],
+          },
+          toMML: jasmine.createSpy("startup.toMML").and.returnValue("<MathML>"),
+        },
+        typesetClear: jasmine.createSpy("typesetClear"),
+      };
+      window.MathJax.startup.promise = new Promise((resolve) => {
+        this.resolveStartup = () => {
+          MathJax.typesetPromise = jasmine.createSpy("typesetPromise").and.returnValue(Promise.resolve());
+          resolve();
+        };
+      });
+      const content = readFixtures("problem_content.html").replace('value=""', 'value="E=mc^2"');
+      $(".problems-wrapper").data("content", content);
+      this.problem = new Problem(mockRuntime, $(".xblock-student_view"));
+    });
+
+    it("typesets the saved textline math once startup resolves", function (done) {
+      expect(MathJax.typesetPromise).toBeUndefined();
+      expect($("#display_example_1").text()).toBe("");
+      this.resolveStartup();
+      setTimeout(() => {
+        expect(MathJax.typesetPromise).toHaveBeenCalled();
+        expect($("#display_example_1").text()).toBe("`E=mc^2`");
+        done();
+      }, 0);
+    });
+  });
+
   describe("bind_with_custom_input_id", function () {
     beforeEach(function () {
       spyOn(window, "update_schematics");

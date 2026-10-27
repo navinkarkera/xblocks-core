@@ -57,10 +57,12 @@ Problem.prototype.$ = function (selector) {
   return $(selector, this.el);
 };
 
-// MathJax v3/v4 exposes readiness and typesetting through startup/typesetPromise.
+// MathJax v3/v4 exposes readiness through startup.promise; typesetPromise is only
+// installed once startup resolves, so callers must chain typeset calls from it.
 const isMathJaxTypesetReady = () => typeof MathJax !== "undefined" && MathJax !== null
-  && MathJax.startup && MathJax.startup.promise && typeof MathJax.typesetPromise === "function";
+  && MathJax.startup && MathJax.startup.promise;
 const isMathJaxRefreshReady = () => isMathJaxTypesetReady()
+  && typeof MathJax.typesetPromise === "function"
   && typeof MathJax.typesetClear === "function"
   && MathJax.startup.document && typeof MathJax.startup.document.getMathItemsWithin === "function";
 const isMathJaxMathMLReady = () => typeof MathJax !== "undefined" && MathJax !== null
